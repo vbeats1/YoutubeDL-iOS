@@ -662,7 +662,7 @@ open class YoutubeDL: NSObject {
         }
 
         session.exportAsynchronously { [weak self, weak session] in
-            guard let self, let session else { return }
+            guard let self = self, let session = session else { return }
             print(#function, "finished merge", session.status.rawValue)
             print(#function, "took", self.downloader.dateComponentsFormatter.string(from: ProcessInfo.processInfo.systemUptime - t0) ?? "?")
             if session.status == .completed {
