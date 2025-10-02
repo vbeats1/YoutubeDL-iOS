@@ -1,13 +1,16 @@
-// swift-tools-version:5.3
+// swift-tools-version:5.9
 
 import PackageDescription
 
 let package = Package(
     name: "YoutubeDL-iOS",
-    platforms: [.iOS(.v13),],
+    platforms: [
+        .iOS(.v16)
+    ],
     products: [
         .library(
             name: "YoutubeDL",
+            type: .dynamic,
             targets: ["YoutubeDL"]),
     ],
     dependencies: [
@@ -18,7 +21,10 @@ let package = Package(
     targets: [
         .target(
             name: "YoutubeDL",
-            dependencies: ["Python-iOS", "PythonKit", "FFmpeg-iOS-Lame"]),
+            dependencies: ["Python-iOS", "PythonKit", "FFmpeg-iOS-Lame"],
+            swiftSettings: [
+                .unsafeFlags(["-Xcc", "-Wno-nullability-completeness"], .when(platforms: [.iOS]))
+            ]),
         .testTarget(
             name: "YoutubeDL_iOSTests",
             dependencies: ["YoutubeDL"]),
