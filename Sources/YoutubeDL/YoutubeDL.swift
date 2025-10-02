@@ -23,9 +23,8 @@
 import Foundation
 import PythonKit
 import PythonSupport
-@preconcurrency import Dispatch
-@preconcurrency import AVFoundation
-@preconcurrency import Photos
+import AVFoundation
+import Photos
 import UIKit
 import FFmpegSupport
 
