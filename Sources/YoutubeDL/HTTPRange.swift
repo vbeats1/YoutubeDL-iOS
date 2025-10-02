@@ -36,17 +36,27 @@ extension HTTPURLResponse {
         
         guard let string = contentRange else { return nil }
         let scanner = Scanner(string: string)
-        var prefix: NSString?
-        var start: Int64 = -1
-        var end: Int64 = -1
-        var size: Int64 = -1
-        guard scanner.scanUpToCharacters(from: .decimalDigits, into: &prefix),
-              scanner.scanInt64(&start),
-              scanner.scanString("-", into: nil),
-              scanner.scanInt64(&end),
-              scanner.scanString("/", into: nil),
-              scanner.scanInt64(&size) else { return nil }
-        return (prefix as String?, Range(start...end), size)
+        if #available(iOS 13.0, *) {
+            guard let prefix = scanner.scanUpToCharacters(from: .decimalDigits),
+                  let start = scanner.scanInt64(),
+                  scanner.scanString("-") != nil,
+                  let end = scanner.scanInt64(),
+                  scanner.scanString("/") != nil,
+                  let size = scanner.scanInt64() else { return nil }
+            return (prefix, Range(start...end), size)
+        } else {
+            var prefix: NSString?
+            var start: Int64 = -1
+            var end: Int64 = -1
+            var size: Int64 = -1
+            guard scanner.scanUpToCharacters(from: .decimalDigits, into: &prefix),
+                  scanner.scanInt64(&start),
+                  scanner.scanString("-", into: nil),
+                  scanner.scanInt64(&end),
+                  scanner.scanString("/", into: nil),
+                  scanner.scanInt64(&size) else { return nil }
+            return (prefix as String?, Range(start...end), size)
+        }
     }
 }
 
