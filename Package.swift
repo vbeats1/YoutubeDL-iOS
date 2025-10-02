@@ -18,7 +18,10 @@ let package = Package(
     targets: [
         .target(
             name: "YoutubeDL",
-            dependencies: ["Python-iOS", "PythonKit", "FFmpeg-iOS-Lame"]),
+            dependencies: ["Python-iOS", "PythonKit", "FFmpeg-iOS-Lame"],
+            swiftSettings: [
+                .unsafeFlags(["-Xcc", "-Wno-nullability-completeness"], .when(platforms: [.iOS]))
+            ]),
         .testTarget(
             name: "YoutubeDL_iOSTests",
             dependencies: ["YoutubeDL"]),
