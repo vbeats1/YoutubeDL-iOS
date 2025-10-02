@@ -205,9 +205,7 @@ extension Downloader: URLSessionDownloadDelegate {
         )
         
         let kind = downloadTask.kind
-        let url = downloadTask.taskDescription.map {
-            URL(fileURLWithPath: $0, relativeTo: directory)
-        } ?? directory.appendingPathComponent("complete.mp4")
+        let url = URL(fileURLWithPath: taskDescription, relativeTo: directory)
 
         do {
             func resume(selector: @escaping ([URLSessionDownloadTask]) -> URLSessionDownloadTask?) {
@@ -250,7 +248,7 @@ extension Downloader: URLSessionDownloadDelegate {
                 guard range.upperBound >= size else {
                     resume { tasks in
                         tasks.first {
-                            $0.taskDescription == downloadTask.taskDescription
+                            $0.taskDescription == taskDescription
                             && $0.hasPrefix(range.upperBound)
                         }
                         ?? tasks.first { $0.hasPrefix(0) }

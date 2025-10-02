@@ -649,7 +649,8 @@ open class YoutubeDL: NSObject {
         session.outputFileType = .mp4
         print(#function, "merging...")
         
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
             let progress = self.downloader.progress
             progress.kind = nil
             progress.localizedDescription = NSLocalizedString("Merging...", comment: "Progress description")
@@ -658,8 +659,9 @@ open class YoutubeDL: NSObject {
             progress.completedUnitCount = 0
             progress.estimatedTimeRemaining = nil
         }
-        
-        session.exportAsynchronously {
+
+        session.exportAsynchronously { [weak self] in
+            guard let self = self else { return }
             print(#function, "finished merge", session.status.rawValue)
             print(#function, "took", self.downloader.dateComponentsFormatter.string(from: ProcessInfo.processInfo.systemUptime - t0) ?? "?")
             if session.status == .completed {
@@ -682,15 +684,16 @@ open class YoutubeDL: NSObject {
             return
         }
         
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
             guard UIApplication.shared.applicationState == .active else {
                 guard let index = self.pendingDownloads.firstIndex(where: { $0.directory.path == directory.path }) else { fatalError() }
                 self.pendingDownloads[index].transcodePending = true
-                
+
                 notify(body: NSLocalizedString("AskTranscode", comment: "Notification body"), identifier: NotificationRequestIdentifier.transcode.rawValue)
                 return
             }
-            
+
             //            let alert = UIAlertController(title: nil, message: NSLocalizedString("DoNotSwitch", comment: "Alert message"), preferredStyle: .alert)
             //            alert.addAction(UIAlertAction(title: NSLocalizedString("OK", comment: "Action"), style: .default, handler: nil))
             //            self.topViewController?.present(alert, animated: true, completion: nil)
@@ -701,7 +704,8 @@ open class YoutubeDL: NSObject {
         
         removeItem(at: outURL)
         
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
             let progress = self.downloader.progress
             progress.kind = nil
             progress.localizedDescription = NSLocalizedString("Transcoding...", comment: "Progress description")
@@ -714,15 +718,17 @@ open class YoutubeDL: NSObject {
             transcoder = Transcoder()
         }
         
-        transcoder?.progressBlock = { progress in
+        transcoder?.progressBlock = { [weak self] progress in
+            guard let self = self else { return }
             print(#function, "progress:", progress)
             let elapsed = ProcessInfo.processInfo.systemUptime - t0
             let speed = progress / elapsed
             let ETA = (1 - progress) / speed
-            
+
             guard ETA.isFinite else { return }
-            
-            DispatchQueue.main.async {
+
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
                 let _progress = self.downloader.progress
                 _progress.completedUnitCount = Int64(progress * 100)
                 _progress.estimatedTimeRemaining = ETA
@@ -742,12 +748,16 @@ open class YoutubeDL: NSObject {
         }
         
         notify(body: NSLocalizedString("FinishedTranscoding", comment: "Notification body"))
-        
-        tryMerge(directory: url.deletingLastPathComponent(), title: url.title, timeRange: download.timeRange)
+
+        guard tryMerge(directory: url.deletingLastPathComponent(), title: url.title, timeRange: download.timeRange) else {
+            print(#function, "Failed to merge streams for", url)
+            return
+        }
     }
     
     internal func export(_ url: URL) {
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
             let progress = self.downloader.progress
             progress.localizedDescription = nil
             progress.localizedAdditionalDescription = nil
@@ -763,15 +773,17 @@ open class YoutubeDL: NSObject {
         PHPhotoLibrary.shared().performChanges({
             _ = PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: url)
             //                            changeRequest.contentEditingOutput = output
-        }) { (success, error) in
+        }) { [weak self] (success, error) in
+            guard let self = self else { return }
             print(#function, success, error ?? "")
-            
+
             if let continuation = self.finishedContinuation {
                 continuation.yield(url)
             } else {
                 notify(body: NSLocalizedString("Download complete!", comment: "Notification body"))
             }
-            DispatchQueue.main.async {
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
                 let progress = self.downloader.progress
                 progress.fileCompletedCount = 1
                 do {
@@ -859,6 +871,8 @@ extension URLSessionDownloadTask {
         "\(taskDescription ?? "no task description") \(originalRequest?.value(forHTTPHeaderField: "Range") ?? "no range")"
     }
 }
+
+extension YoutubeDL: @unchecked Sendable {}
 
 // https://github.com/yt-dlp/yt-dlp/blob/4f08e586553755ab61f64a5ef9b14780d91559a7/yt_dlp/YoutubeDL.py#L338
 public func yt_dlp(argv: [String], progress: (([String: PythonObject]) -> Void)? = nil, log: ((String, String) -> Void)? = nil, makeTranscodeProgressBlock: (() -> ((Double) -> Void)?)? = nil) async throws {
