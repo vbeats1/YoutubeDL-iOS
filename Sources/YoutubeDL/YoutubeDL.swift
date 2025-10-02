@@ -872,6 +872,8 @@ extension URLSessionDownloadTask {
     }
 }
 
+extension YoutubeDL: @unchecked Sendable {}
+
 // https://github.com/yt-dlp/yt-dlp/blob/4f08e586553755ab61f64a5ef9b14780d91559a7/yt_dlp/YoutubeDL.py#L338
 public func yt_dlp(argv: [String], progress: (([String: PythonObject]) -> Void)? = nil, log: ((String, String) -> Void)? = nil, makeTranscodeProgressBlock: (() -> ((Double) -> Void)?)? = nil) async throws {
     let context = Context()
